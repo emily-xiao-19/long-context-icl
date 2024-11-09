@@ -32,7 +32,6 @@ python run_evaluation.py \
 --model togethercomputer/LLaMA-2-7B-32K \
 --subsample-test-set 250 \
 --n-runs 10 \
---token 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 \
 --n-shots-per-window 10 24 \
 --n-windows 10 \
 --output-dir ./test
