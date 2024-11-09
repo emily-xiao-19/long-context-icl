@@ -142,7 +142,7 @@ class ExperimentManager:
     def get_few_shots_acc(self, windows_few_shot: List[str]) -> float:
         if self.use_retrieval:
             predicted_labels = self.get_predicted_labels_retrieval(restrictive_logit_preprocessor=self.logit_processor)
-        elif len(windows_few_shot) == 1 and not self.pcw_base_model:
+        elif len(windows_few_shot) == 1 and not self.pcw_base_model: # in here!
             predicted_labels = self.get_predicted_labels_nonpcw(context=windows_few_shot[0], restrictive_logit_preprocessor=self.logit_processor)
         else:
             predicted_labels = self.get_predicted_labels(windows_few_shot)
@@ -283,14 +283,14 @@ class ExperimentManager:
                 predicted_labels[-1] = predicted_labels[-1].split('\n')[0].split('==')[0].split('source:')[0].rstrip() # we assume batch size of 1 anyway...  hardcoded for smcalflow at the moment but can change the split to use the x_prefix and the examplifier delimeters to be more general if we need
         return predicted_labels
     
-    def get_predicted_labels_nonpcw(self, context: str, restrictive_logit_preprocessor):       
+    def get_predicted_labels_nonpcw(self, context: str, restrictive_logit_preprocessor): # context=windows_few_shot[0]       
         predicted_labels = []
                 
         fewshot_examples = self.tokenizer(context, add_special_tokens=False, return_tensors='pt')
-        fewshot_len = fewshot_examples['input_ids'].shape[-1]
+        fewshot_len = fewshot_examples['input_ids'].shape[-1] # 21950
 
         if self.stride_size != -1 or self.examples_stride != -1:
-            temp_mask = self.make_block_mask(fewshot_examples, context)
+            temp_mask = self.make_block_mask(fewshot_examples, context) # torch.Size([21950, 21950])
                     
         for q in tqdm(self.test_df[PROMPTS]):
             assert q == q.rstrip(), "prompt ends with a space!"
@@ -300,21 +300,21 @@ class ExperimentManager:
 
             
             encoded_inputs = torch.cat((fewshot_examples['input_ids'], encoded_task_text['input_ids']), dim=-1).to(self.model.device)
-            attention_mask = torch.cat((fewshot_examples['attention_mask'], encoded_task_text['attention_mask']), dim=-1).to(self.model.device)
+            attention_mask = torch.cat((fewshot_examples['attention_mask'], encoded_task_text['attention_mask']), dim=-1).to(self.model.device) # all ones
             custom_attention_mask = None
             input_len = encoded_inputs.shape[-1]
    
             if self.stride_size != -1 or self.examples_stride != -1:
-                full_attention_region = encoded_task_text['input_ids'].shape[-1]
+                full_attention_region = encoded_task_text['input_ids'].shape[-1] # 29
                 
                 # ensure that the full attention region really is full attention (after doing the block attention elsewhere)
 
-                causal_ones = torch.ones(full_attention_region, fewshot_len, dtype=torch.bool)
+                causal_ones = torch.ones(full_attention_region, fewshot_len, dtype=torch.bool) # torch.Size([29, 21950])
 
-                this_example_mask=torch.cat((temp_mask, causal_ones), axis=0)
+                this_example_mask=torch.cat((temp_mask, causal_ones), axis=0) # torch.Size([21979, 21950])
 
 
-                causal_zeros = torch.zeros(fewshot_len+full_attention_region,full_attention_region, dtype=torch.bool)
+                causal_zeros = torch.zeros(fewshot_len+full_attention_region,full_attention_region, dtype=torch.bool) # torch.Size([21979, 29])
                 this_example_mask=torch.cat((this_example_mask, causal_zeros), axis=1)
                 
                 
@@ -324,7 +324,6 @@ class ExperimentManager:
                 this_example_mask[mask] = 1
                 
                 custom_attention_mask = (this_example_mask.bool()).unsqueeze(0).unsqueeze(1).to(self.model.device)
-
             
             kwargs = dict(input_ids=encoded_inputs,
                           custom_attention_mask=custom_attention_mask,
@@ -419,7 +418,6 @@ class ExperimentManager:
         return acc, save_state
 
     def run_experiment_across_shots(self, n_shots_to_test: List[int], n_runs: int,
-                                    prefix: str, suffix: str,
                                     too_long_patience: float = 0.2,
                                     context_window_size: int = 4096):
         accuracies = np.zeros((len(n_shots_to_test), n_runs))
@@ -437,13 +435,12 @@ class ExperimentManager:
                 if self.sort_by_label:
                     selected = selected.sort_values("label")
                     
-                few_shots_prompts = list(selected[PROMPTS])
+                few_shots_prompts = list(selected[PROMPTS]) # query: I've completely forgot the code to get into the app. \nintent: passcode forgotten
                 if self.window_shuffle_seed:
                     prev_state = random.getstate()
                     random.seed(self.window_shuffle_seed)
                     random.shuffle(few_shots_prompts)
                     random.setstate(prev_state)
-                    
                 windows_few_shots = self.build_windows_few_shots_text(few_shots_prompts, self.n_shots_per_window)
                 longest_window_n_tokens = max(n_tokens_in_prompt(self.tokenizer, window)
                                               for window in windows_few_shots)

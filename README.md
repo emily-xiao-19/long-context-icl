@@ -3,6 +3,13 @@
 This repository contains the code for reproducing the experiments from the preprint "In-Context Learning with Long-Context Models: An In-Depth Exploration." It is built on the skeleton of the code from the paper [Parallel Context Windows for Large Language Models
 ](https://arxiv.org/abs/2212.10947).  
 
+## Env setup
+- new conda env with python 3.9
+- install pip packages in env.yml
+- pip install retriv
+- additional code set up : copy modeling_gpt2_with_pcw.py and modeling_llama_with_pcw.py from parallel context codebase
+- upgrade transformers and torch, otherwise model will not load correctly
+- replace python -c "import transformers; print(transformers.__path__)" modeling_llama.py with replacement_modeling_llama.py for custom attention mask
 
 ## Use 
 
@@ -17,6 +24,18 @@ python run_evaluation.py \
 --seed 43 \
 --nspw 1,10,25,100,1000,2000
 --output-dir $OUTPUT_DIR
+```
+correct command :
+```bash
+python run_evaluation.py \
+--dataset banking77 \
+--model togethercomputer/LLaMA-2-7B-32K \
+--subsample-test-set 250 \
+--n-runs 10 \
+--token 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 \
+--n-shots-per-window 10 24 \
+--n-windows 10 \
+--output-dir ./test
 ```
 
 ## Synchronizing data

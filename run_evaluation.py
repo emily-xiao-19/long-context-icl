@@ -110,7 +110,6 @@ def run_pcw_experiment(datasets: List[str], models: List[str], cache_dir: str, s
                     print(f'Found results in {output_path}. Overwriting...')
                 else:
                     print(f'Running with {output_path}...')
-
                 if pcw_model is None:
                     # lazy loading
 
@@ -140,7 +139,7 @@ def run_pcw_experiment(datasets: List[str], models: List[str], cache_dir: str, s
                         
                     elif not pcw_base_model and len(n_windows) == 1 and n_windows[0] == 1:
                         if 'llama' in model.lower():
-                            pcw_model = LlamaForCausalLM.from_pretrained(model, use_auth_token=token).to('cuda')
+                            pcw_model = LlamaForCausalLM.from_pretrained(model, use_auth_token=token).to('cuda') # here
                         else:
                             pcw_model = AutoModelForCausalLM.from_pretrained(model, use_auth_token=token).to('cuda')
                             print('Warning - you are using a non-llama model which may make some of the features to not work correctly. beware')
@@ -231,7 +230,7 @@ if __name__ == '__main__':
     # Evaluation and sampling related arguments
     parser.add_argument('--subsample-test-set', type=int,
                         help='Size of test set to use to speed up eval. None means using all test set.')
-    parser.add_argument('--random-seed', default=42, type=int)
+    parser.add_argument('--random-seed', default=43, type=int)
     parser.add_argument('--n-runs', help="Number of times experiments are repeated for every number of windows",
                         type=int, default=1)
 
@@ -264,6 +263,7 @@ if __name__ == '__main__':
 
     
     args = parser.parse_args()
+    print(args)
     
     print('running with token:', args.token)
     run_pcw_experiment(**vars(args))
